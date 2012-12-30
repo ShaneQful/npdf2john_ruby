@@ -77,7 +77,7 @@ class PdfParser
 		escape_seq = false
 		escapes = 0
 		o_or_u.size.times do |i|
-			if(![0,1,2,35].include? i)
+			if(![0,1,2].include? i)
 				if(o_or_u[i].to_s(16).size == 1 && o_or_u[i] != "\\"[0])
 					pass += "0"
 				end
@@ -99,7 +99,7 @@ class PdfParser
 				end
 			end
 		end
-		"#{o_or_u.size-4-escapes}*#{pass}"
+		"#{o_or_u.size-4-escapes}*#{pass.chop.chop}"
 	end
 end
 
