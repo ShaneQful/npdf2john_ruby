@@ -1,5 +1,8 @@
 #!/usr/bin/ruby
 
+#Hacky have to find a better way
+$escape_seq_map = Hash['\n' => "\n", '\s' => "\s", '\e' => "\e", '\t' => "\t", '\v' => "\v", '\f' => "\f", '\b' => "\b", '\a' => "\a", '\e' => "\e", '\\' => "\\" ]
+
 class PdfParser
 	def initialize file_name
 		file = File.open(file_name,'rb')
@@ -27,11 +30,15 @@ class PdfParser
 		else
 			puts "Something may have gone wrong"
 		end
-		output_for_JtR += "#{id.size/2}*#{id}*"
+		output_for_JtR += "#{id.size/2}*#{id.downcase}*"
 		u = encryption_dictionary[/\/U\([^)]+\)/]
 		output_for_JtR += (get_passwords_for_JtR u)+"*"
 		o = encryption_dictionary[/\/O\([^)]+\)/]
+		puts o[-2].to_s(16)
+		puts o[-3].chr
 		output_for_JtR += get_passwords_for_JtR o
+# 		puts o[21].chr
+# 		puts  get_passwords_for_JtR o
 		return output_for_JtR
 	end
 
@@ -40,7 +47,8 @@ class PdfParser
 	def get_trailer
 		trailer = @encrypted[/trailer\s<<(\s|\S)*\/Encrypt(\s|\S)*>>/]
 		if(trailer == nil)
-			abort "File not encrypted"
+# 			puts "File not encrypted"
+			raise "File not encrypted"
 		end
 		return trailer
 	end
@@ -58,18 +66,42 @@ class PdfParser
 	
 	def get_passwords_for_JtR o_or_u
 		pass = ""
+		escape_seq = false
+		escapes = 0
 		o_or_u.size.times do |i|
 			if(![0,1,2,35].include? i)# && o[i] != o[-1])
-				if(o_or_u[i].to_s(16).size == 1)
+				if(o_or_u[i].to_s(16).size == 1 && o_or_u[i] != "\\"[0])
 					pass += "0"
 				end
-				pass += o_or_u[i].to_s(16)#need to be 2 digit hex numbers
-				
+				if(o_or_u[i] != "\\"[0] || escape_seq)
+					if(escape_seq)
+						esc = "\\"+o_or_u[i].chr
+						esc = $escape_seq_map[esc]
+						if(esc[0].to_s(16).size == 1)
+							pass += "0"
+						end
+						pass += esc[0].to_s(16)
+						escape_seq = false
+					else
+						pass += o_or_u[i].to_s(16)#need to be 2 digit hex numbers
+					end
+				else
+					escape_seq = true
+					escapes += 1
+				end
 			end
 		end
-		"#{o_or_u.size-4}*#{pass}"
+		"#{o_or_u.size-4-escapes}*#{pass}"
 	end
 end
 
+# ARGV.each do |arg|
+# 	begin
+# 		parser = PdfParser.new arg
+# 		puts arg+":#{parser.parse}"
+# 	rescue => e
+# 		puts arg+":"+e.message
+# 	end
+# end
 parser = PdfParser.new ARGV[0]
 puts ARGV[0]+":#{parser.parse}"
