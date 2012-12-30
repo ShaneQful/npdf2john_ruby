@@ -34,11 +34,7 @@ class PdfParser
 		u = encryption_dictionary[/\/U\([^)]+\)/]
 		output_for_JtR += (get_passwords_for_JtR u)+"*"
 		o = encryption_dictionary[/\/O\([^)]+\)/]
-		puts o[-2].to_s(16)
-		puts o[-3].chr
 		output_for_JtR += get_passwords_for_JtR o
-# 		puts o[21].chr
-# 		puts  get_passwords_for_JtR o
 		return output_for_JtR
 	end
 
@@ -69,7 +65,7 @@ class PdfParser
 		escape_seq = false
 		escapes = 0
 		o_or_u.size.times do |i|
-			if(![0,1,2,35].include? i)# && o[i] != o[-1])
+			if(![0,1,2,35].include? i)
 				if(o_or_u[i].to_s(16).size == 1 && o_or_u[i] != "\\"[0])
 					pass += "0"
 				end
