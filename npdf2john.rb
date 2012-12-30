@@ -1,7 +1,8 @@
 #!/usr/bin/ruby
 
 #Hacky have to find a better way
-$escape_seq_map = Hash['\n' => "\n", '\s' => "\s", '\e' => "\e", '\t' => "\t", '\v' => "\v", '\f' => "\f", '\b' => "\b", '\a' => "\a", '\e' => "\e", "\\\\" => "\\" ]
+#All bugs come from here :(
+$escape_seq_map = Hash['\n' => "\n", '\s' => "\s", '\e' => "\e", '\t' => "\t", '\v' => "\v", '\f' => "\f", '\b' => "\b", '\a' => "\a", '\e' => "\e", "\\(" => "(", "\\\\" => "\\" ]
 
 class PdfParser
 	def initialize file_name
@@ -23,23 +24,34 @@ class PdfParser
 		output_for_JtR += "#{v}*#{r}*#{length}*#{p_}*1*"
 		#TODO: What the don't know what this 1 is supposed to be
 		id = trailer[/\/ID\s*\[\s*<\w+>\s*<\w+>\s*\]/].scan /<\w+>/
-		if(id[0] == id[1])
-			id = id[0]
-			id.delete! "<"
-			id.delete! ">"
-		else
-			puts "Something may have gone wrong"
-		end
+		#Just taking the first on because that's what the old npdf2john does but it may not be the correct way to go
+		id = id[0]
+		id.delete! "<"
+		id.delete! ">"
 		output_for_JtR += "#{id.size/2}*#{id.downcase}*"
+# 		puts encryption_dictionary
+# 		puts trailer
+# 		puts output_for_JtR
 		output_for_JtR += get_passwords_for_JtR encryption_dictionary
 		return output_for_JtR
 	end
 
 	private
 	
-	def get_trailer
-		trailer = @encrypted[/trailer\s<<(\s|\S)*\/Encrypt(\s|\S)*>>/]
-		if(trailer == nil)
+	def get_trailer #Manual search as regexs all broke on later specifications
+		trailer = ""
+		inside_trailer = false
+		lines = @encrypted.split "\n"
+		lines.each do |line|
+			inside_trailer = inside_trailer || line.include?("trailer")
+			if(inside_trailer)
+				trailer += line
+				if(line.include? ">>")
+					break
+				end
+			end
+		end
+		if(trailer == "" || !trailer.include?("Encrypt") )
 			raise "File not encrypted"
 		end
 		return trailer
@@ -84,7 +96,7 @@ class PdfParser
 				if(o_or_u[i] != "\\"[0] || escape_seq)
 					if(escape_seq)
 						esc = "\\"+o_or_u[i].chr
-						esc = $escape_seq_map[esc]
+						esc = $escape_seq_map[esc]#esc nil need a better way of dealing with od chars
 						if(esc[0].to_s(16).size == 1)
 							pass += "0"
 						end
