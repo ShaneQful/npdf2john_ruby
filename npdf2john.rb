@@ -1,7 +1,7 @@
 #!/usr/bin/ruby
 
 #Hacky have to find a better way
-$escape_seq_map = Hash['\n' => "\n", '\s' => "\s", '\e' => "\e", '\t' => "\t", '\v' => "\v", '\f' => "\f", '\b' => "\b", '\a' => "\a", '\e' => "\e", '\\' => "\\" ]
+$escape_seq_map = Hash['\n' => "\n", '\s' => "\s", '\e' => "\e", '\t' => "\t", '\v' => "\v", '\f' => "\f", '\b' => "\b", '\a' => "\a", '\e' => "\e", "\\\\" => "\\" ]
 
 class PdfParser
 	def initialize file_name
@@ -43,7 +43,6 @@ class PdfParser
 	def get_trailer
 		trailer = @encrypted[/trailer\s<<(\s|\S)*\/Encrypt(\s|\S)*>>/]
 		if(trailer == nil)
-# 			puts "File not encrypted"
 			raise "File not encrypted"
 		end
 		return trailer
@@ -72,7 +71,9 @@ class PdfParser
 				if(o_or_u[i] != "\\"[0] || escape_seq)
 					if(escape_seq)
 						esc = "\\"+o_or_u[i].chr
+						print esc
 						esc = $escape_seq_map[esc]
+						puts ":#{esc.inspect}"
 						if(esc[0].to_s(16).size == 1)
 							pass += "0"
 						end
@@ -91,13 +92,13 @@ class PdfParser
 	end
 end
 
-ARGV.each do |arg|
-	begin
-		parser = PdfParser.new arg
-		puts arg+":#{parser.parse}"
-	rescue => e
-		puts arg+":"+e.message
-	end
-end
-# parser = PdfParser.new ARGV[0]
-# puts ARGV[0]+":#{parser.parse}"
+# ARGV.each do |arg|
+# 	begin
+# 		parser = PdfParser.new arg
+# 		puts arg+":#{parser.parse}"
+# 	rescue => e
+# 		puts arg+":"+e.message
+# 	end
+# end
+parser = PdfParser.new ARGV[0]
+puts ARGV[0]+":#{parser.parse}"
