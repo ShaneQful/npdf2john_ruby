@@ -10,16 +10,16 @@ class PdfParser
 	end
 	
 	def parse
-		@trailer = get_trailer
-		@encryption_dictionary = get_encryption_dictionary(get_encrypted_object_id(@trailer))
+		trailer = get_trailer
+		encryption_dictionary = get_encryption_dictionary(get_encrypted_object_id(trailer))
 		output_for_JtR = "$npdf$"
-		v = @encryption_dictionary[/\/V \d\//][/\d/]
-		r = @encryption_dictionary[/\/R \d\//][/\d/]
-		length =  @encryption_dictionary[/\/Length \d+\//][/\d+/]
-		p_ = @encryption_dictionary[/\/P -\d+/][/-\d+/] #p is a key word in ruby
+		v = encryption_dictionary[/\/V \d\//][/\d/]
+		r = encryption_dictionary[/\/R \d\//][/\d/]
+		length =  encryption_dictionary[/\/Length \d+\//][/\d+/]
+		p_ = encryption_dictionary[/\/P -\d+/][/-\d+/] #p is a key word in ruby
 		output_for_JtR += "#{v}*#{r}*#{length}*#{p_}*1*"
 		#TODO: What the don't know what this 1 is supposed to be
-		id = @trailer[/\/ID \[ <\w+>\s<\w+> \]/].scan /<\w+>/
+		id = trailer[/\/ID \[ <\w+>\s<\w+> \]/].scan /<\w+>/
 		if(id[0] == id[1])
 			id = id[0]
 			id.delete! "<"
@@ -28,9 +28,9 @@ class PdfParser
 			puts "Something may have gone wrong"
 		end
 		output_for_JtR += "#{id.size/2}*#{id}*"
-		u = @encryption_dictionary[/\/U\([^)]+\)/]
+		u = encryption_dictionary[/\/U\([^)]+\)/]
 		output_for_JtR += (get_passwords_for_JtR u)+"*"
-		o = @encryption_dictionary[/\/O\([^)]+\)/]
+		o = encryption_dictionary[/\/O\([^)]+\)/]
 		output_for_JtR += get_passwords_for_JtR o
 		return output_for_JtR
 	end
@@ -60,7 +60,11 @@ class PdfParser
 		pass = ""
 		o_or_u.size.times do |i|
 			if(![0,1,2,35].include? i)# && o[i] != o[-1])
-				pass += o_or_u[i].to_s(16)
+				if(o_or_u[i].to_s(16).size == 1)
+					pass += "0"
+				end
+				pass += o_or_u[i].to_s(16)#need to be 2 digit hex numbers
+				
 			end
 		end
 		"#{o_or_u.size-4}*#{pass}"
