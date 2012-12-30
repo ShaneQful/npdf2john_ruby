@@ -1,33 +1,64 @@
 #!/usr/bin/ruby
 
-file = File.open(ARGV[0],'rb')
-encrypted = ''
-file.readlines.each do |line|
-	encrypted += line
+class PdfParser
+	def initialize file_name
+		file = File.open(file_name,'rb')
+		@encrypted = ''
+		file.readlines.each do |line|
+			@encrypted += line
+		end
+	end
+	
+	def parse
+		@trailer = get_trailer
+		@encryption_dictionary = get_encryption_dictionary(get_encrypted_object_id)
+	end
+	
+	def to_s
+		@trailer+"\n"+@encryption_dictionary
+	end
+	private
+	
+	def get_trailer
+		trailer = @encrypted[/trailer\s<<(\s|\S)*\/Encrypt(\s|\S)*>>/]
+		if(trailer == nil)
+			abort "File not encrypted"
+		end
+		return trailer
+	end
+	
+	def get_encrypted_object_id
+		object_id = @trailer[/\/Encrypt\s\d+\s\d\sR/]
+		object_id = object_id[/\d+ \d/]
+		return object_id
+	end
+	
+	def get_encryption_dictionary object_id
+		encryption_dictionary = @encrypted[/#{Regexp.quote(object_id)}\sobj(\s|\S)+endobj/]
+		return encryption_dictionary
+	end
 end
 
-#get_trailer
-trailer = encrypted[/trailer\s<<(\s|\S)*\/Encrypt(\s|\S)*>>/]
-if(trailer == nil)
-	abort "File not encrypted"
-end
-#get_encrypted_object_id
-object_id = trailer[/\/Encrypt\s\d+\s\d\sR/]
-object_id = object_id[/\d+ \d/]
+parser = PdfParser.new ARGV[0]
+parser.parse
+puts parser.to_s
 
-#get_encryption_dictionary
-encryption_dictionary = encrypted[/#{Regexp.quote(object_id)}\sobj(\s|\S)+endobj/]
-
+=begin
 #get_passwords
 u = encryption_dictionary[/\/U\((\s|\S)+\)/]
 puts u[3]
 puts u.size-4
 
 o = encryption_dictionary[/\/O\([^)]+\)/]
-puts o[3]
-puts o.size-4
+owner_pass = ""
+o.size.times do |i|
+  if(![0,1,2,35].include? i)# && o[i] != o[-1])
+    owner_pass += o[i].to_s(16)
+  end
+end
+puts "#{o.size-4}*#{owner_pass}"
 #JtR npdf format:
-=begin
+# =begin
 $npdf$(/V)*(/R)*(/Length)*(/P)*1(FIK)*
 16(guessing length of /ID in ascii ie half /ID.size)*(/ID from trailer)*
 (length_of /O)*
