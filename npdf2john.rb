@@ -31,25 +31,7 @@ class PdfParser
 			puts "Something may have gone wrong"
 		end
 		output_for_JtR += "#{id.size/2}*#{id.downcase}*"
-		#Abstract these next to if statements into a method
-		u = encryption_dictionary[/\/U\([^)]+\)/]
-		if(u)
-			output_for_JtR += (get_passwords_for_JtR u)+"*"
-		else
-			u = encryption_dictionary[/\/U\s*<\w+>/][/<\w+>/]
-			u.delete! "<"
-			u.delete! ">"
-			output_for_JtR += "#{u.size/2}*#{u.downcase}*"
-		end
-		o = encryption_dictionary[/\/O\([^)]+\)/]
-		if(o)
-			output_for_JtR += get_passwords_for_JtR o
-		else
-			o = encryption_dictionary[/\/O\s*<\w+>/][/<\w+>/]			
-			o.delete! "<"
-			o.delete! ">"
-			output_for_JtR += "#{o.size/2}*#{o.downcase}"
-		end
+		output_for_JtR += get_passwords_for_JtR encryption_dictionary
 		return output_for_JtR
 	end
 
@@ -74,7 +56,23 @@ class PdfParser
 		return encryption_dictionary
 	end
 	
-	def get_passwords_for_JtR o_or_u
+	def get_passwords_for_JtR encryption_dictionary
+		output = ""
+		["U","O"].each do |let|
+			pass = encryption_dictionary[/\/#{Regexp.quote(let)}\([^)]+\)/]
+			if(pass)
+				output +=  "#{get_password_from_byte_string pass}*"
+			else
+				pass = encryption_dictionary[/\/#{Regexp.quote(let)}\s*<\w+>/][/<\w+>/]
+				pass.delete! "<"
+				pass.delete! ">"
+				output += "#{pass.size/2}*#{pass.downcase}*"
+			end
+		end
+		return output.chop
+	end
+	
+	def get_password_from_byte_string o_or_u
 		pass = ""
 		escape_seq = false
 		escapes = 0
