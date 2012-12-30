@@ -11,12 +11,30 @@ class PdfParser
 	
 	def parse
 		@trailer = get_trailer
-		@encryption_dictionary = get_encryption_dictionary(get_encrypted_object_id)
+		@encryption_dictionary = get_encryption_dictionary(get_encrypted_object_id(@trailer))
+		output_for_JtR = "$npdf$"
+		v = @encryption_dictionary[/\/V \d\//][/\d/]
+		r = @encryption_dictionary[/\/R \d\//][/\d/]
+		length =  @encryption_dictionary[/\/Length \d+\//][/\d+/]
+		p_ = @encryption_dictionary[/\/P -\d+/][/-\d+/] #p is a key word in ruby
+		output_for_JtR += "#{v}*#{r}*#{length}*#{p_}*1*"
+		#TODO: What the don't know what this 1 is supposed to be
+		id = @trailer[/\/ID \[ <\w+>\s<\w+> \]/].scan /<\w+>/
+		if(id[0] == id[1])
+			id = id[0]
+			id.delete! "<"
+			id.delete! ">"
+		else
+			puts "Something may have gone wrong"
+		end
+		output_for_JtR += "#{id.size/2}*#{id}*"
+		u = @encryption_dictionary[/\/U\([^)]+\)/]
+		output_for_JtR += (get_passwords_for_JtR u)+"*"
+		o = @encryption_dictionary[/\/O\([^)]+\)/]
+		output_for_JtR += get_passwords_for_JtR o
+		return output_for_JtR
 	end
-	
-	def to_s
-		@trailer+"\n"+@encryption_dictionary
-	end
+
 	private
 	
 	def get_trailer
@@ -27,8 +45,8 @@ class PdfParser
 		return trailer
 	end
 	
-	def get_encrypted_object_id
-		object_id = @trailer[/\/Encrypt\s\d+\s\d\sR/]
+	def get_encrypted_object_id trailer
+		object_id = trailer[/\/Encrypt\s\d+\s\d\sR/]
 		object_id = object_id[/\d+ \d/]
 		return object_id
 	end
@@ -37,44 +55,17 @@ class PdfParser
 		encryption_dictionary = @encrypted[/#{Regexp.quote(object_id)}\sobj(\s|\S)+endobj/]
 		return encryption_dictionary
 	end
+	
+	def get_passwords_for_JtR o_or_u
+		pass = ""
+		o_or_u.size.times do |i|
+			if(![0,1,2,35].include? i)# && o[i] != o[-1])
+				pass += o_or_u[i].to_s(16)
+			end
+		end
+		"#{o_or_u.size-4}*#{pass}"
+	end
 end
 
 parser = PdfParser.new ARGV[0]
-parser.parse
-puts parser.to_s
-
-=begin
-#get_passwords
-u = encryption_dictionary[/\/U\((\s|\S)+\)/]
-puts u[3]
-puts u.size-4
-
-o = encryption_dictionary[/\/O\([^)]+\)/]
-owner_pass = ""
-o.size.times do |i|
-  if(![0,1,2,35].include? i)# && o[i] != o[-1])
-    owner_pass += o[i].to_s(16)
-  end
-end
-puts "#{o.size-4}*#{owner_pass}"
-#JtR npdf format:
-# =begin
-$npdf$(/V)*(/R)*(/Length)*(/P)*1(FIK)*
-16(guessing length of /ID in ascii ie half /ID.size)*(/ID from trailer)*
-(length_of /O)*
-hex_representation_of /O*
-(length_of /U)*
-hex_representation_of /U
-
-both owner & user passwords 32 in length
-both large hex numbers are 64 in length
-
-puts "Trailer:"
-puts trailer
-puts
-puts "Object ID:"
-puts object_id
-puts
-puts "Encryption Dictionary:"
-puts encryption_dictionary
-=end
+puts ARGV[0]+":#{parser.parse}"
