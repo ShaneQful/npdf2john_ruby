@@ -95,13 +95,13 @@ class PdfParser
 	end
 end
 
-# ARGV.each do |arg|
-# 	begin
-# 		parser = PdfParser.new arg
-# 		puts arg+":#{parser.parse}"
-# 	rescue => e
-# 		puts arg+":"+e.message
-# 	end
-# end
-parser = PdfParser.new ARGV[0]
-puts ARGV[0]+":#{parser.parse}"
+ARGV.each do |arg|
+	begin
+		parser = PdfParser.new arg
+		puts arg+":#{parser.parse}"
+	rescue => e
+		puts arg+":"+e.message
+	end
+end
+# parser = PdfParser.new ARGV[0]
+# puts ARGV[0]+":#{parser.parse}"
