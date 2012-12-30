@@ -16,13 +16,13 @@ class PdfParser
 		trailer = get_trailer
 		encryption_dictionary = get_encryption_dictionary(get_encrypted_object_id(trailer))
 		output_for_JtR = "$npdf$"
-		v = encryption_dictionary[/\/V \d\//][/\d/]
-		r = encryption_dictionary[/\/R \d\//][/\d/]
-		length =  encryption_dictionary[/\/Length \d+\//][/\d+/]
+		v = encryption_dictionary[/\/V \d/][/\d/]
+		r = encryption_dictionary[/\/R \d/][/\d/]
+		length =  encryption_dictionary[/\/Length \d+/][/\d+/]
 		p_ = encryption_dictionary[/\/P -\d+/][/-\d+/] #p is a key word in ruby
 		output_for_JtR += "#{v}*#{r}*#{length}*#{p_}*1*"
 		#TODO: What the don't know what this 1 is supposed to be
-		id = trailer[/\/ID \[ <\w+>\s<\w+> \]/].scan /<\w+>/
+		id = trailer[/\/ID\s*\[\s*<\w+>\s*<\w+>\s*\]/].scan /<\w+>/
 		if(id[0] == id[1])
 			id = id[0]
 			id.delete! "<"
@@ -31,10 +31,25 @@ class PdfParser
 			puts "Something may have gone wrong"
 		end
 		output_for_JtR += "#{id.size/2}*#{id.downcase}*"
+		#Abstract these next to if statements into a method
 		u = encryption_dictionary[/\/U\([^)]+\)/]
-		output_for_JtR += (get_passwords_for_JtR u)+"*"
+		if(u)
+			output_for_JtR += (get_passwords_for_JtR u)+"*"
+		else
+			u = encryption_dictionary[/\/U\s*<\w+>/][/<\w+>/]
+			u.delete! "<"
+			u.delete! ">"
+			output_for_JtR += "#{u.size/2}*#{u.downcase}*"
+		end
 		o = encryption_dictionary[/\/O\([^)]+\)/]
-		output_for_JtR += get_passwords_for_JtR o
+		if(o)
+			output_for_JtR += get_passwords_for_JtR o
+		else
+			o = encryption_dictionary[/\/O\s*<\w+>/][/<\w+>/]			
+			o.delete! "<"
+			o.delete! ">"
+			output_for_JtR += "#{o.size/2}*#{o.downcase}"
+		end
 		return output_for_JtR
 	end
 
@@ -71,9 +86,7 @@ class PdfParser
 				if(o_or_u[i] != "\\"[0] || escape_seq)
 					if(escape_seq)
 						esc = "\\"+o_or_u[i].chr
-						print esc
 						esc = $escape_seq_map[esc]
-						puts ":#{esc.inspect}"
 						if(esc[0].to_s(16).size == 1)
 							pass += "0"
 						end
@@ -92,13 +105,13 @@ class PdfParser
 	end
 end
 
-# ARGV.each do |arg|
-# 	begin
-# 		parser = PdfParser.new arg
-# 		puts arg+":#{parser.parse}"
-# 	rescue => e
-# 		puts arg+":"+e.message
-# 	end
-# end
-parser = PdfParser.new ARGV[0]
-puts ARGV[0]+":#{parser.parse}"
+ARGV.each do |arg|
+	begin
+		parser = PdfParser.new arg
+		puts arg+":#{parser.parse}"
+	rescue => e
+		puts arg+":"+e.message
+	end
+end
+# parser = PdfParser.new ARGV[0]
+# puts ARGV[0]+":#{parser.parse}"
