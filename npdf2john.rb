@@ -16,26 +16,27 @@ class PdfParser
 	
 	def parse
 		trailer = get_trailer
-# 		puts trailer
-		encryption_dictionary = get_encryption_dictionary(get_encrypted_object_id(trailer))
-# 		puts encryption_dictionary.inspect
+		object_id = get_encrypted_object_id(trailer)
+		encryption_dictionary = get_encryption_dictionary(object_id)
 		output_for_JtR = "$npdf$"
 		v = encryption_dictionary[/\/V \d/][/\d/]
 		r = encryption_dictionary[/\/R \d/][/\d/]
 		longest = 0
 		length = ""
-		encryption_dictionary.scan(/\/Length \d+/).each do |len| #Not sure which length I should be taking the length
+		# Not sure which length I should be taking but longest seems to line up with
+		# old npdf2john
+		encryption_dictionary.scan(/\/Length \d+/).each do |len|
 			if(len[/\d+/].to_i > longest)
 				longest = len[/\d+/].to_i
 				length = len[/\d+/]
 			end
 		end
-# 		length = encryption_dictionary[/\/Length \d+/][/\d+/]
 		p_ = encryption_dictionary[/\/P -\d+/][/-\d+/] #p is a key word in ruby
 		output_for_JtR += "#{v}*#{r}*#{length}*#{p_}*1*"
 		#TODO: What the don't know what this 1 is supposed to be
 		id = trailer[/\/ID\s*\[\s*<\w+>\s*<\w+>\s*\]/].scan /<\w+>/
-		#Just taking the first one because that's what the old npdf2john does but it may not be the correct way to go
+		# Just taking the first one because that's what the old npdf2john does 
+		# but it may not be the correct way to go
 		id = id[0]
 		id.delete! "<"
 		id.delete! ">"
@@ -46,9 +47,9 @@ class PdfParser
 
 	private
 	
+	#Uses search as original regexs all broke on later specifications
+	#May change back to regexs later if I make a more robust one
 	def get_trailer 
-		#Manual search as original regexs all broke on later specifications
-		#May change back to regexs later if I make a more robust one
 		trailer = get_data_between "trailer", ">>"
 		if(trailer == "")
 			trailer = get_data_between "DecodeParms", "stream"
@@ -102,7 +103,7 @@ class PdfParser
 		end
 		letters.each do |let|
 			pass = encryption_dictionary[/\/#{Regexp.quote(let)}\((\\\)|[^)])+\)/]
-			if(pass)#This may have to be changed for the 1.7 spec
+			if(pass)
 				output +=  "#{get_password_from_byte_string pass}*"
 			else
 				pass = encryption_dictionary[/\/#{Regexp.quote(let)}\s*<\w+>/][/<\w+>/]
@@ -131,7 +132,8 @@ class PdfParser
 				if(o_or_u[i] != "\\"[0] || escape_seq)
 					if(escape_seq)
 						esc = "\\"+o_or_u[i].chr
-						esc = $escape_seq_map[esc]#esc nil need a better way of dealing with od chars
+						#need a better way of dealing with escaped chars
+						esc = $escape_seq_map[esc]
 						if(esc[0].to_s(16).size == 1)
 							pass += "0"
 						end
@@ -158,5 +160,6 @@ ARGV.each do |arg|
 		puts arg+":"+e.message
 	end
 end
+#For debugging purposes:
 # parser = PdfParser.new ARGV[0]
 # puts ARGV[0]+":#{parser.parse}"
