@@ -118,8 +118,13 @@ class PdfParser
 		pass = ""
 		escape_seq = false
 		escapes = 0
+		excluded_indexes = [0,1,2]
+		#For UE & OE in 1.7 spec
+		if(o_or_u[2] != "("[0])
+			excluded_indexes.push 3
+		end
 		o_or_u.size.times do |i|
-			if(![0,1,2].include? i)
+			if(!excluded_indexes.include? i)
 				if(o_or_u[i].to_s(16).size == 1 && o_or_u[i] != "\\"[0])
 					pass += "0"#need to be 2 digit hex numbers
 				end
@@ -141,7 +146,7 @@ class PdfParser
 				end
 			end
 		end
-		"#{o_or_u.size-4-escapes}*#{pass.chop.chop}"
+		"#{o_or_u.size-(excluded_indexes.size+1)-escapes}*#{pass.chop.chop}"
 	end
 end
 
