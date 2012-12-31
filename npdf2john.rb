@@ -2,7 +2,7 @@
 
 #Hacky have to find a better way
 #All bugs come from here :(
-$escape_seq_map = Hash['\n' => "\n", '\s' => "\s", '\e' => "\e", '\t' => "\t", '\v' => "\v", '\f' => "\f", '\b' => "\b", '\a' => "\a", '\e' => "\e", "\\(" => "(", "\\\\" => "\\" ]
+$escape_seq_map = Hash['\n' => "\n", '\s' => "\s", '\e' => "\e", '\r' => "\r", '\t' => "\t", '\v' => "\v", '\f' => "\f", '\b' => "\b", '\a' => "\a", '\e' => "\e", "\\)" => ")", "\\(" => "(", "\\\\" => "\\" ]
 
 class PdfParser
 	def initialize file_name
@@ -15,46 +15,66 @@ class PdfParser
 	
 	def parse
 		trailer = get_trailer
+# 		puts trailer
 		encryption_dictionary = get_encryption_dictionary(get_encrypted_object_id(trailer))
+# 		puts encryption_dictionary.inspect
 		output_for_JtR = "$npdf$"
 		v = encryption_dictionary[/\/V \d/][/\d/]
 		r = encryption_dictionary[/\/R \d/][/\d/]
-		length =  encryption_dictionary[/\/Length \d+/][/\d+/]
+		longest = 0
+		length = ""
+		encryption_dictionary.scan(/\/Length \d+/).each do |len| #Not sure which length I should be taking the length
+			if(len[/\d+/].to_i > longest)
+				longest = len[/\d+/].to_i
+				length = len[/\d+/]
+			end
+		end
+# 		length = encryption_dictionary[/\/Length \d+/][/\d+/]
 		p_ = encryption_dictionary[/\/P -\d+/][/-\d+/] #p is a key word in ruby
 		output_for_JtR += "#{v}*#{r}*#{length}*#{p_}*1*"
 		#TODO: What the don't know what this 1 is supposed to be
 		id = trailer[/\/ID\s*\[\s*<\w+>\s*<\w+>\s*\]/].scan /<\w+>/
-		#Just taking the first on because that's what the old npdf2john does but it may not be the correct way to go
+		#Just taking the first one because that's what the old npdf2john does but it may not be the correct way to go
 		id = id[0]
 		id.delete! "<"
 		id.delete! ">"
 		output_for_JtR += "#{id.size/2}*#{id.downcase}*"
-# 		puts encryption_dictionary
-# 		puts trailer
-# 		puts output_for_JtR
 		output_for_JtR += get_passwords_for_JtR encryption_dictionary
 		return output_for_JtR
 	end
 
 	private
 	
-	def get_trailer #Manual search as regexs all broke on later specifications
-		trailer = ""
-		inside_trailer = false
+	def get_trailer 
+		#Manual search as original regexs all broke on later specifications
+		#May change back to regexs later if I make a more robust one
+		trailer = get_data_between "trailer", ">>"
+		if(trailer == "")
+			trailer = get_data_between "DecodeParms", "stream"
+			if(trailer == "")
+				raise "Can't find trailer"
+			end
+		end
+		if(trailer != "" && !trailer.include?("Encrypt") )
+			raise "File not encrypted"
+		end
+		return trailer
+	end
+	
+	def get_data_between s1, s2
+		output = ""
+		inside_first = false
 		lines = @encrypted.split "\n"
 		lines.each do |line|
-			inside_trailer = inside_trailer || line.include?("trailer")
-			if(inside_trailer)
-				trailer += line
-				if(line.include? ">>")
+			inside_first = inside_first || line.include?(s1)
+			if(inside_first)
+				output += line
+				if(line.include? s2)
 					break
 				end
 			end
 		end
-		if(trailer == "" || !trailer.include?("Encrypt") )
-			raise "File not encrypted"
-		end
-		return trailer
+		return output
 	end
 	
 	def get_encrypted_object_id trailer
@@ -64,7 +84,12 @@ class PdfParser
 	end
 	
 	def get_encryption_dictionary object_id
-		encryption_dictionary = @encrypted[/#{Regexp.quote(object_id)}\sobj(\s|\S)+endobj/]
+		encryption_dictionary = get_data_between "#{object_id} obj", "endobj"
+		encryption_dictionary.split("endobj").each do |object|
+			if(object.include? "#{object_id} obj")
+				encryption_dictionary = object
+			end
+		end
 		return encryption_dictionary
 	end
 	
@@ -91,7 +116,7 @@ class PdfParser
 		o_or_u.size.times do |i|
 			if(![0,1,2].include? i)
 				if(o_or_u[i].to_s(16).size == 1 && o_or_u[i] != "\\"[0])
-					pass += "0"
+					pass += "0"#need to be 2 digit hex numbers
 				end
 				if(o_or_u[i] != "\\"[0] || escape_seq)
 					if(escape_seq)
@@ -103,7 +128,7 @@ class PdfParser
 						pass += esc[0].to_s(16)
 						escape_seq = false
 					else
-						pass += o_or_u[i].to_s(16)#need to be 2 digit hex numbers
+						pass += o_or_u[i].to_s(16)
 					end
 				else
 					escape_seq = true
