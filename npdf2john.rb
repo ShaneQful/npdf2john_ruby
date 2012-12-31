@@ -11,6 +11,7 @@ class PdfParser
 		file.readlines.each do |line|
 			@encrypted += line
 		end
+		@pdf_spec = @encrypted[/PDF-\d\.\d/]
 	end
 	
 	def parse
@@ -39,7 +40,7 @@ class PdfParser
 		id.delete! "<"
 		id.delete! ">"
 		output_for_JtR += "#{id.size/2}*#{id.downcase}*"
-		output_for_JtR += get_passwords_for_JtR encryption_dictionary
+		output_for_JtR += get_passwords_for_JtR(encryption_dictionary)
 		return output_for_JtR
 	end
 
@@ -95,9 +96,13 @@ class PdfParser
 	
 	def get_passwords_for_JtR encryption_dictionary
 		output = ""
-		["U","O"].each do |let|
-			pass = encryption_dictionary[/\/#{Regexp.quote(let)}\([^)]+\)/]
-			if(pass)
+		letters = ["U","O"]
+		if(@pdf_spec.include? "1.7")
+			letters = ["U","O","UE","OE"]
+		end
+		letters.each do |let|
+			pass = encryption_dictionary[/\/#{Regexp.quote(let)}\((\\\)|[^)])+\)/]
+			if(pass)#This may have to be changed for the 1.7 spec
 				output +=  "#{get_password_from_byte_string pass}*"
 			else
 				pass = encryption_dictionary[/\/#{Regexp.quote(let)}\s*<\w+>/][/<\w+>/]
