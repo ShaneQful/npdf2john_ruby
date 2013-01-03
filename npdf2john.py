@@ -50,8 +50,11 @@ class PdfParser:
 		if("1.7" in self.pdf_spec):
 			letters = ["U","O","UE","OE"]
 		for let in letters:
-			pr = re.compile(let+'\((\\\)|[^)])+\)')
+			pr = re.compile('\/'+let+'\([^)]+\)')
+			#print pr.methods()
 			pas = pr.findall(encryption_dictionary)[0]
+			print pas
+			break
 			if(pas):
 				output +=  self.get_password_from_byte_string(pas)+"*"
 			else:
@@ -118,7 +121,8 @@ class PdfParser:
 		escapes = 0
 		excluded_indexes = [0,1,2]
 		#For UE & OE in 1.7 spec
-		if(o_or_u[2] != "("[0]):
+		print o_or_u
+		if(o_or_u[2] != '('):
 			excluded_indexes.append(3)
 		for i in range(len(o_or_u)):
 			if(i not in excluded_indexes):
@@ -128,8 +132,7 @@ class PdfParser:
 					if(escape_seq):
 						print o_or_u[i]
 						esc = "\\"+o_or_u[i].chr
-						#need a better way of dealing with escaped chars
-						esc = $escape_seq_map[esc]
+						esc = self.unescape(esc)
 						if(esc[0].to_s(16).size == 1):
 							pas += "0"
 						pas += esc[0].to_s(16)
@@ -141,6 +144,9 @@ class PdfParser:
 					escapes += 1
 		output = len(o_or_u)-(len(excluded_indexes)+1)-escapes
 		return output+'*'+pas[:-2]
+
+		def unescape(self,esc):
+			pass
 
 
 c = 0
