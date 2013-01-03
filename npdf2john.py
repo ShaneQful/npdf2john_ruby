@@ -40,7 +40,7 @@ class PdfParser:
 		i_d = i_d.replace('>','')
 		i_d = i_d.lower()
 		passwords = self.get_passwords_for_JtR(encryption_dictionary)
-		output = '$npdf$'+v+'*'+r+'*'+length+'*'+p+'*'+meta+'*'+(len(i_d)/2)+'*'
+		output = '$npdf$'+v+'*'+r+'*'+length+'*'+p+'*'+meta+'*'+str(len(i_d)/2)+'*'
 		output += i_d+'*'+passwords
 		print output
 
@@ -50,11 +50,14 @@ class PdfParser:
 		if("1.7" in self.pdf_spec):
 			letters = ["U","O","UE","OE"]
 		for let in letters:
-			pr = re.compile('\/'+let+'\([^)]+\)')
-			#print pr.methods()
+			pr_str = '\/'+let+'\([^)]+\)'
+			pr = re.compile(pr_str)
 			pas = pr.findall(encryption_dictionary)[0]
-			print pas
-			break
+			#Because regexs in python suck
+			while(pas[-2] == '\\'):
+				pr_str += '[^)]+\)'
+				pr = re.compile(pr_str)
+				pas = pr.findall(encryption_dictionary)[0]
 			if(pas):
 				output +=  self.get_password_from_byte_string(pas)+"*"
 			else:
@@ -121,29 +124,28 @@ class PdfParser:
 		escapes = 0
 		excluded_indexes = [0,1,2]
 		#For UE & OE in 1.7 spec
-		print o_or_u
 		if(o_or_u[2] != '('):
 			excluded_indexes.append(3)
 		for i in range(len(o_or_u)):
 			if(i not in excluded_indexes):
-				if(o_or_u[i].to_s(16).size == 1 and o_or_u[i] != "\\"[0]):
+				if(len(hex(ord(o_or_u[i])).replace('0x', '')) and o_or_u[i] != "\\"[0]):
 					pas += "0"#need to be 2 digit hex numbers
 				if(o_or_u[i] != "\\"[0] or escape_seq):
 					if(escape_seq):
 						print o_or_u[i]
 						esc = "\\"+o_or_u[i].chr
-						esc = self.unescape(esc)
-						if(esc[0].to_s(16).size == 1):
+						self.unescape(esc)
+						if(len(hex(ord(esc[0])).replace('0x', '')) == 1):
 							pas += "0"
-						pas += esc[0].to_s(16)
+						pas += hex(ord(esc[0])).replace('0x', '')
 						escape_seq = False
 					else:
-						pas += o_or_u[i].to_s(16)
+						pas += hex(ord(o_or_u[i])).replace('0x', '')
 				else:
 					escape_seq = True
 					escapes += 1
 		output = len(o_or_u)-(len(excluded_indexes)+1)-escapes
-		return output+'*'+pas[:-2]
+		return str(output)+'*'+pas[:-2]
 
 		def unescape(self,esc):
 			pass
