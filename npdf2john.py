@@ -40,7 +40,7 @@ class PdfParser:
 		i_d = i_d.replace('>','')
 		i_d = i_d.lower()
 		passwords = self.get_passwords_for_JtR(encryption_dictionary)
-		output = '$npdf$'+v'*'+r+'*'+length+'*'+p+'*'+meta+'*'+(len(i_d)/2)+'*'
+		output = '$npdf$'+v+'*'+r+'*'+length+'*'+p+'*'+meta+'*'+(len(i_d)/2)+'*'
 		output += i_d+'*'+passwords
 		print output
 
@@ -119,24 +119,25 @@ class PdfParser:
 		excluded_indexes = [0,1,2]
 		#For UE & OE in 1.7 spec
 		if(o_or_u[2] != "("[0]):
-			excluded_indexes.push 3
-		o_or_u.size.times do |i|
-			if(!excluded_indexes.include? i):
+			excluded_indexes.append(3)
+		for i in range(len(o_or_u)):
+			if(i not in excluded_indexes):
 				if(o_or_u[i].to_s(16).size == 1 and o_or_u[i] != "\\"[0]):
 					pas += "0"#need to be 2 digit hex numbers
 				if(o_or_u[i] != "\\"[0] or escape_seq):
 					if(escape_seq):
+						print o_or_u[i]
 						esc = "\\"+o_or_u[i].chr
 						#need a better way of dealing with escaped chars
 						esc = $escape_seq_map[esc]
 						if(esc[0].to_s(16).size == 1):
 							pas += "0"
 						pas += esc[0].to_s(16)
-						escape_seq = false
+						escape_seq = False
 					else:
 						pas += o_or_u[i].to_s(16)
 				else:
-					escape_seq = true
+					escape_seq = True
 					escapes += 1
 		output = len(o_or_u)-(len(excluded_indexes)+1)-escapes
 		return output+'*'+pas[:-2]
