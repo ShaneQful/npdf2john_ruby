@@ -32,8 +32,8 @@ class PdfParser
 			end
 		end
 		p_ = encryption_dictionary[/\/P -\d+/][/-\d+/] #p is a key word in ruby
-		output_for_JtR += "#{v}*#{r}*#{length}*#{p_}*1*"
-		#TODO: What the don't know what this 1 is supposed to be
+		meta = is_meta_data_encrypted(encryption_dictionary)
+		output_for_JtR += "#{v}*#{r}*#{length}*#{p_}*#{meta}*"
 		id = trailer[/\/ID\s*\[\s*<\w+>\s*<\w+>\s*\]/].scan /<\w+>/
 		# Just taking the first one because that's what the old npdf2john does 
 		# but it may not be the correct way to go
@@ -46,6 +46,20 @@ class PdfParser
 	end
 
 	private
+	
+	def is_meta_data_encrypted encryption_dictionary
+		encryption_dictionary[/\/EncryptMetadata\s\w+/]
+		if(encryption_dictionary[/\/EncryptMetadata\s\w+/])
+			is_encrypted = encryption_dictionary[/\/EncryptMetadata\s\w+/].scan(/\w+/)[-1]
+			if(is_encrypted == "false")
+				return "0"
+			else
+				return "1"
+			end
+		else
+			return "1"
+		end
+	end
 	
 	#Uses search as original regexs all broke on later specifications
 	#May change back to regexs later if I make a more robust one
