@@ -32,7 +32,20 @@ class PdfParser:
 		p = pr.findall(encryption_dictionary)[0]
 		pr = re.compile('-\d+')
 		p = pr.findall(encryption_dictionary)[0]
-		
+		meta = self.is_meta_data_encrypted(encryption_dictionary)
+		print meta
+
+	def is_meta_data_encrypted(self, encryption_dictionary):
+		mr = re.compile('\/EncryptMetadata\s\w+')
+		if(len(mr.findall(encryption_dictionary)) > 0):
+			wr = re.compile('\w+')
+			is_encrypted = wr.findall(mr.findall(encryption_dictionary)[0])[-1]
+			if(is_encrypted == "false"):
+				return "0"
+			else:
+				return "1"
+		else:
+			return "1"
 
 	def get_encryption_dictionary(self,object_id):
 		encryption_dictionary = self.get_data_between(object_id+" obj", "endobj")
