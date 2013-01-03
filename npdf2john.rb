@@ -48,7 +48,6 @@ class PdfParser
 	private
 	
 	def is_meta_data_encrypted encryption_dictionary
-		encryption_dictionary[/\/EncryptMetadata\s\w+/]
 		if(encryption_dictionary[/\/EncryptMetadata\s\w+/])
 			is_encrypted = encryption_dictionary[/\/EncryptMetadata\s\w+/].scan(/\w+/)[-1]
 			if(is_encrypted == "false")
