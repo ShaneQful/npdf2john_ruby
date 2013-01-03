@@ -24,16 +24,22 @@ class PdfParser:
 		lr = re.compile('\/Length \d+')
 		longest = 0
 		length = ''
-		for len in lr.findall(encryption_dictionary):
-			if(int(dr.findall(len)[0]) > longest):
-				longest = int(dr.findall(len)[0])
-				length = dr.findall(len)[0]
+		for le in lr.findall(encryption_dictionary):
+			if(int(dr.findall(le)[0]) > longest):
+				longest = int(dr.findall(le)[0])
+				length = dr.findall(le)[0]
 		pr = re.compile('\/P -\d+')
 		p = pr.findall(encryption_dictionary)[0]
 		pr = re.compile('-\d+')
 		p = pr.findall(encryption_dictionary)[0]
 		meta = self.is_meta_data_encrypted(encryption_dictionary)
-		print meta
+		idr = re.compile('\/ID\s*\[\s*<\w+>\s*<\w+>\s*\]')
+		i_d = idr.findall(trailer)[0] #id key word
+		idr = re.compile('<\w+>')
+		i_d = idr.findall(trailer)[0]
+		i_d = i_d.replace('<','')
+		i_d = i_d.replace('>','')
+		print i_d
 
 	def is_meta_data_encrypted(self, encryption_dictionary):
 		mr = re.compile('\/EncryptMetadata\s\w+')
