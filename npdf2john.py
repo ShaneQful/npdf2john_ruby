@@ -13,7 +13,40 @@ class PdfParser:
 
 	def parse(self):
 		trailer = self.get_trailer()
-		print trailer
+		object_id = self.get_encrypted_object_id(trailer)
+		encryption_dictionary = self.get_encryption_dictionary(object_id)
+		output_for_JtR = '$npdf$'
+		dr = re.compile('\d+')
+		vr = re.compile('\/V \d')
+		rr = re.compile('\/R \d')
+		v = dr.findall(vr.findall(encryption_dictionary)[0])[0]
+		r = dr.findall(rr.findall(encryption_dictionary)[0])[0]
+		lr = re.compile('\/Length \d+')
+		longest = 0
+		length = ''
+		for len in lr.findall(encryption_dictionary):
+			if(int(dr.findall(len)[0]) > longest):
+				longest = int(dr.findall(len)[0])
+				length = dr.findall(len)[0]
+		pr = re.compile('\/P -\d+')
+		p = pr.findall(encryption_dictionary)[0]
+		pr = re.compile('-\d+')
+		p = pr.findall(encryption_dictionary)[0]
+		
+
+	def get_encryption_dictionary(self,object_id):
+		encryption_dictionary = self.get_data_between(object_id+" obj", "endobj")
+		for o in encryption_dictionary.split("endobj"):
+			if(object_id+" obj" in o):
+				encryption_dictionary = o
+		return encryption_dictionary
+
+	def get_encrypted_object_id(self,trailer):
+		oir = re.compile('\/Encrypt\s\d+\s\d\sR')
+		object_id = oir.findall(trailer)[0]
+		oir = re.compile('\d+ \d')
+		object_id = oir.findall(object_id)[0]
+		return object_id
 
 	def get_trailer(self):
 		trailer = self.get_data_between("trailer", ">>")
