@@ -5,6 +5,7 @@ import sys
 
 class PdfParser:
 	def __init__(self,file_name):
+		self.file_name = file_name
 		f = open(file_name, 'r')
 		self.encrypted = f.read()
 		f.close()
@@ -40,8 +41,8 @@ class PdfParser:
 		i_d = i_d.replace('>','')
 		i_d = i_d.lower()
 		passwords = self.get_passwords_for_JtR(encryption_dictionary)
-		output = '$npdf$'+v+'*'+r+'*'+length+'*'+p+'*'+meta+'*'+str(len(i_d)/2)+'*'
-		output += i_d+'*'+passwords
+		output = self.file_name+':$npdf$'+v+'*'+r+'*'+length+'*'+p+'*'+meta+'*'
+		output += str(len(i_d)/2)+'*'+i_d+'*'+passwords
 		print output
 
 	def get_passwords_for_JtR(self, encryption_dictionary):
@@ -128,13 +129,12 @@ class PdfParser:
 			excluded_indexes.append(3)
 		for i in range(len(o_or_u)):
 			if(i not in excluded_indexes):
-				if(len(hex(ord(o_or_u[i])).replace('0x', '')) and o_or_u[i] != "\\"[0]):
+				if(len(hex(ord(o_or_u[i])).replace('0x', '')) == 1 and o_or_u[i] != "\\"[0]):
 					pas += "0"#need to be 2 digit hex numbers
 				if(o_or_u[i] != "\\"[0] or escape_seq):
 					if(escape_seq):
-						print o_or_u[i]
-						esc = "\\"+o_or_u[i].chr
-						self.unescape(esc)
+						esc = "\\"+o_or_u[i]
+						esc = self.unescape(esc)
 						if(len(hex(ord(esc[0])).replace('0x', '')) == 1):
 							pas += "0"
 						pas += hex(ord(esc[0])).replace('0x', '')
@@ -147,8 +147,9 @@ class PdfParser:
 		output = len(o_or_u)-(len(excluded_indexes)+1)-escapes
 		return str(output)+'*'+pas[:-2]
 
-		def unescape(self,esc):
-			pass
+	def unescape(self,esc):
+		escape_seq_map = {'\\n':"\n", '\\s':"\s", '\\e':"\e", '\\r':"\r", '\\t':"\t", '\\v':"\v", '\\f':"\f", '\\b':"\b", '\\a':"\a", '\\e':"\e", "\\)":")", "\\(":"(", "\\\\":"\\" }
+		return escape_seq_map[esc]
 
 
 c = 0
