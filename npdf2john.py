@@ -31,7 +31,7 @@ class PdfParser:
 		pr = re.compile('\/P -\d+')
 		p = pr.findall(encryption_dictionary)[0]
 		pr = re.compile('-\d+')
-		p = pr.findall(encryption_dictionary)[0]
+		p = pr.findall(p)[0]
 		meta = self.is_meta_data_encrypted(encryption_dictionary)
 		idr = re.compile('\/ID\s*\[\s*<\w+>\s*<\w+>\s*\]')
 		i_d = idr.findall(trailer)[0] #id key word
@@ -53,22 +53,23 @@ class PdfParser:
 		for let in letters:
 			pr_str = '\/'+let+'\([^)]+\)'
 			pr = re.compile(pr_str)
-			pas = pr.findall(encryption_dictionary)[0]
-			#Because regexs in python suck
-			while(pas[-2] == '\\'):
-				pr_str += '[^)]+\)'
-				pr = re.compile(pr_str)
+			pas = pr.findall(encryption_dictionary)
+			if(len(pas) > 0):
 				pas = pr.findall(encryption_dictionary)[0]
-			if(pas):
+				#Because regexs in python suck
+				while(pas[-2] == '\\'):
+					pr_str += '[^)]+\)'
+					pr = re.compile(pr_str)
+					pas = pr.findall(encryption_dictionary)[0]
 				output +=  self.get_password_from_byte_string(pas)+"*"
 			else:
 				pr = re.compile(let+'\s*<\w+>')
 				pas = pr.findall(encryption_dictionary)[0]
 				pr = re.compile('<\w+>')
-				pas = pr.findall(encryption_dictionary)[0]
-				pas.replace("<","")
-				pas.replace(">","")
-				output += (len(pas)/2)+'*'+pas.downcase+'*'
+				pas = pr.findall(pas)[0]
+				pas = pas.replace("<","")
+				pas = pas.replace(">","")
+				output += str(len(pas)/2)+'*'+pas.lower()+'*'
 		return output[:-1]
 
 	def is_meta_data_encrypted(self, encryption_dictionary):
