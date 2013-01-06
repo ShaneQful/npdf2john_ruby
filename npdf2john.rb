@@ -1,5 +1,10 @@
 #!/usr/bin/ruby
 
+# Copyright (c) 2012 Shane Quigley
+# 
+# This software is MIT licensed see link for details
+# http://www.opensource.org/licenses/MIT
+
 #Hacky have to find a better way
 #All bugs come from here :(
 $escape_seq_map = Hash['\n' => "\n", '\s' => "\s", '\e' => "\e", '\r' => "\r", '\t' => "\t", '\v' => "\v", '\f' => "\f", '\b' => "\b", '\a' => "\a", '\e' => "\e", "\\)" => ")", "\\(" => "(", "\\\\" => "\\" ]

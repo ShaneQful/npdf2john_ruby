@@ -14,3 +14,11 @@ Works for all test pdfs available in john's sample non-hashes
 ```
 diff <(./npdf2john-master/npdf2john pdfs/*) <(ruby npdf2john.rb pdfs/*) | wc -l
 ```
+
+#### License:
+
+* This software is MIT licensed see link for details
+
+* http://www.opensource.org/licenses/MIT
+
+* If you want to add npdf2john.rb ro john itself please feel free to disregard the license.
