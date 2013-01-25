@@ -120,7 +120,7 @@ class PdfParser
 			letters = ["U","O","UE","OE"]
 		end
 		letters.each do |let|
-			pass = encryption_dictionary[/\/#{Regexp.quote(let)}\((\\\)|[^)])+\)/]
+			pass = encryption_dictionary[/\/#{Regexp.quote(let)}\s*\((\\\)|[^)])+\)/]
 			if(pass)
 				output +=  "#{get_password_from_byte_string pass}*"
 			else
@@ -178,6 +178,6 @@ ARGV.each do |arg|
 		puts arg+":"+e.message
 	end
 end
-#For debugging purposes:
+# For debugging purposes:
 # parser = PdfParser.new ARGV[0]
 # puts ARGV[0]+":#{parser.parse}"
