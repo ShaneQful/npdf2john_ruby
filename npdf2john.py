@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-# Copyright (c) 2012 Shane Quigley
+# Copyright (c) 2013 Shane Quigley
 # 
 # This software is MIT licensed see link for details
 # http://www.opensource.org/licenses/MIT
