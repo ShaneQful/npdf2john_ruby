@@ -46,7 +46,7 @@ class PdfParser:
 		i_d = i_d.replace('>','')
 		i_d = i_d.lower()
 		passwords = self.get_passwords_for_JtR(encryption_dictionary)
-		output = self.file_name+':$npdf$'+v+'*'+r+'*'+length+'*'+p+'*'+meta+'*'
+		output = self.file_name+':$pdf$'+v+'*'+r+'*'+length+'*'+p+'*'+meta+'*'
 		output += str(len(i_d)/2)+'*'+i_d+'*'+passwords
 		print output
 

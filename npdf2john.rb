@@ -23,7 +23,7 @@ class PdfParser
 		trailer = get_trailer
 		object_id = get_encrypted_object_id(trailer)
 		encryption_dictionary = get_encryption_dictionary(object_id)
-		output_for_JtR = "$npdf$"
+		output_for_JtR = "$pdf$"
 		v = encryption_dictionary[/\/V \d/][/\d/]
 		r = encryption_dictionary[/\/R \d/][/\d/]
 		longest = 0
