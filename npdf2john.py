@@ -115,7 +115,6 @@ class PdfParser:
                 pas = pr.findall(pas)[0]
                 pas = pas.replace(b"<",b"")
                 pas = pas.replace(b">",b"")
-                #TODO: Fix for python 3
                 if PY3:
                     output += str(int(len(pas)/2))+'*'+str(pas.lower(),'ascii')+'*'
                 else:
@@ -172,6 +171,12 @@ class PdfParser:
                     break
         return output
 
+    def get_hex_byte(self, o_or_u, i):
+        if PY3:
+            return hex(o_or_u[i]).replace('0x', '')
+        else:
+            return hex(ord(o_or_u[i])).replace('0x', '')
+
     def get_password_from_byte_string(self, o_or_u):
         pas = ""
         escape_seq = False
@@ -182,19 +187,20 @@ class PdfParser:
             excluded_indexes.append(3)
         for i in range(len(o_or_u)):
             if(i not in excluded_indexes):
-                if(len(hex(ord(o_or_u[i])).replace('0x', '')) == 1 \
+                #TODO:Fix in python 3
+                if(len(self.get_hex_byte(o_or_u, i)) == 1 \
                    and o_or_u[i] != "\\"[0]):
                     pas += "0"  # need to be 2 digit hex numbers
                 if(o_or_u[i] != "\\"[0] or escape_seq):
                     if(escape_seq):
                         esc = "\\"+o_or_u[i]
                         esc = self.unescape(esc)
-                        if(len(hex(ord(esc[0])).replace('0x', '')) == 1):
+                        if(len(self.get_hex_byte(o_or_u, i)) == 1):
                             pas += "0"
-                        pas += hex(ord(esc[0])).replace('0x', '')
+                        pas += self.get_hex_byte(o_or_u, i)
                         escape_seq = False
                     else:
-                        pas += hex(ord(o_or_u[i])).replace('0x', '')
+                        pas += self.get_hex_byte(o_or_u, i)
                 else:
                     escape_seq = True
                     escapes += 1
