@@ -193,8 +193,14 @@ class PdfParser:
                 if(len(self.get_hex_byte(o_or_u, i)) == 1 \
                    and o_or_u[i] != "\\"[0]):
                     pas += "0"  # need to be 2 digit hex numbers
-                if(o_or_u[i] != "\\"[0] or escape_seq):
+                is_back_slash = True
+                if not PY3:
+                    is_back_slash = o_or_u[i] != "\\"[0]
+                else:
+                    is_back_slash = o_or_u[i] != 92
+                if(is_back_slash or escape_seq):
                     if(escape_seq):
+                        #TODO: Reckong this is messed up in PY3
                         esc = "\\"+o_or_u[i]
                         esc = self.unescape(esc)
                         if(len(self.get_hex_byte(esc, 0)) == 1):
