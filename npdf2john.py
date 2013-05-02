@@ -85,10 +85,9 @@ class PdfParser:
         i_d = i_d.replace(b'>',b'')
         i_d = i_d.lower()
         passwords = self.get_passwords_for_JtR(encryption_dictionary)
-        #TODO: Fix in Python3
         output = self.file_name+':$pdf$'+v.decode('ascii')+'*'+r.decode('ascii')+'*'+length.decode('ascii')+'*'
         output += p.decode('ascii')+'*'+meta+'*'
-        output += str(len(i_d)/2)+'*'+i_d.decode('ascii')+'*'+passwords
+        output += str(int(len(i_d)/2))+'*'+i_d.decode('ascii')+'*'+passwords
         sys.stdout.write("%s\n" % output)
 
     def get_passwords_for_JtR(self, encryption_dictionary):
@@ -150,12 +149,12 @@ class PdfParser:
 
     def get_trailer(self):
         trailer = self.get_data_between(b"trailer", b">>")
-        if(trailer == ""):
+        if(trailer == b""):
             trailer = self.get_data_between(b"DecodeParms", b"stream")
             if(trailer == ""):
                 raise RuntimeError("Can't find trailer")
         if(trailer != "" and trailer.find(b"Encrypt") == -1):
-            #TODO: Fix in Python 3
+            print(trailer)
             raise RuntimeError("File not encrypted")
         return trailer
 
@@ -187,7 +186,6 @@ class PdfParser:
             excluded_indexes.append(3)
         for i in range(len(o_or_u)):
             if(i not in excluded_indexes):
-                #TODO:Fix in python 3
                 if(len(self.get_hex_byte(o_or_u, i)) == 1 \
                    and o_or_u[i] != "\\"[0]):
                     pas += "0"  # need to be 2 digit hex numbers
