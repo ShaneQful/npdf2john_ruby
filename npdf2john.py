@@ -23,6 +23,7 @@
 import re
 import sys
 
+PY3 = sys.version_info[0] == 3
 
 class PdfParser:
     def __init__(self, file_name):
@@ -31,7 +32,7 @@ class PdfParser:
         self.encrypted = f.read()
         f.close()
         self.process = True
-        psr = re.compile(r'PDF-\d\.\d')
+        psr = re.compile(b'PDF-\d\.\d')
         try:
             self.pdf_spec = psr.findall(self.encrypted)[0]
         except IndexError:
@@ -50,75 +51,77 @@ class PdfParser:
             return
         object_id = self.get_encrypted_object_id(trailer)
         encryption_dictionary = self.get_encryption_dictionary(object_id)
-        dr = re.compile(r'\d+')
-        vr = re.compile(r'\/V \d')
-        rr = re.compile(r'\/R \d')
+        dr = re.compile(b'\d+')
+        vr = re.compile(b'\/V \d')
+        rr = re.compile(b'\/R \d')
         v = dr.findall(vr.findall(encryption_dictionary)[0])[0]
         r = dr.findall(rr.findall(encryption_dictionary)[0])[0]
-        lr = re.compile(r'\/Length \d+')
+        lr = re.compile(b'\/Length \d+')
         longest = 0
         length = ''
         for le in lr.findall(encryption_dictionary):
             if(int(dr.findall(le)[0]) > longest):
                 longest = int(dr.findall(le)[0])
                 length = dr.findall(le)[0]
-        pr = re.compile(r'\/P -\d+')
+        pr = re.compile(b'\/P -\d+')
         p = pr.findall(encryption_dictionary)[0]
-        pr = re.compile(r'-\d+')
+        pr = re.compile(b'-\d+')
         p = pr.findall(p)[0]
         meta = self.is_meta_data_encrypted(encryption_dictionary)
-        idr = re.compile(r'\/ID\s*\[\s*<\w+>\s*<\w+>\s*\]')
+        idr = re.compile(b'\/ID\s*\[\s*<\w+>\s*<\w+>\s*\]')
         try:
             i_d = idr.findall(trailer)[0] # id key word
         except IndexError:
             # some pdf files use () instead of <>
-            idr = re.compile(r'\/ID\s*\[\s*\(\w+\)\s*\(\w+\)\s*\]')
+            idr = re.compile(b'\/ID\s*\[\s*\(\w+\)\s*\(\w+\)\s*\]')
             i_d = idr.findall(trailer)[0] # id key word
-        idr = re.compile(r'<\w+>')
+        idr = re.compile(b'<\w+>')
         try:
             i_d = idr.findall(trailer)[0]
         except IndexError:
-            idr = re.compile(r'\(\w+\)')
+            idr = re.compile(b'\(\w+\)')
             i_d = idr.findall(trailer)[0]
-        i_d = i_d.replace(r'<','')
-        i_d = i_d.replace(r'>','')
+        i_d = i_d.replace(b'<',b'')
+        i_d = i_d.replace(b'>',b'')
         i_d = i_d.lower()
         passwords = self.get_passwords_for_JtR(encryption_dictionary)
-        output = self.file_name+':$pdf$'+v+'*'+r+'*'+length+'*'+p+'*'+meta+'*'
-        output += str(len(i_d)/2)+'*'+i_d+'*'+passwords
+        #TODO: Fix in Python3
+        output = self.file_name+b':$pdf$'+v+b'*'+r+b'*'+length+b'*'+p+b'*'+meta+b'*'
+        output += str(len(i_d)/2)+b'*'+i_d+b'*'+passwords
         sys.stdout.write("%s\n" % output)
 
     def get_passwords_for_JtR(self, encryption_dictionary):
-        output = ""
-        letters = ["U", "O"]
-        if("1.7" in self.pdf_spec):
-            letters = ["U", "O", "UE", "OE"]
+        output = b""
+        letters = [b"U", b"O"]
+        if(b"1.7" in self.pdf_spec):
+            letters = [b"U", b"O", b"UE", b"OE"]
         for let in letters:
-            pr_str = r'\/' + let + r'\s*\([^)]+\)'
+            pr_str = b'\/' + let + b'\s*\([^)]+\)'
             pr = re.compile(pr_str)
             pas = pr.findall(encryption_dictionary)
             if(len(pas) > 0):
                 pas = pr.findall(encryption_dictionary)[0]
                 #Because regexs in python suck
                 while(pas[-2] == '\\'):
-                    pr_str += r'[^)]+\)'
+                    pr_str += b'[^)]+\)'
                     pr = re.compile(pr_str)
                     pas = pr.findall(encryption_dictionary)[0]
                 output +=  self.get_password_from_byte_string(pas)+"*"
             else:
-                pr = re.compile(let + r'\s*<\w+>')
+                pr = re.compile(let + b'\s*<\w+>')
                 pas = pr.findall(encryption_dictionary)[0]
-                pr = re.compile(r'<\w+>')
+                pr = re.compile(b'<\w+>')
                 pas = pr.findall(pas)[0]
-                pas = pas.replace(r"<","")
-                pas = pas.replace(r">","")
+                pas = pas.replace(b"<",b"")
+                pas = pas.replace(b">",b"")
+                #TODO: Fix for python 3
                 output += str(len(pas)/2)+'*'+pas.lower()+'*'
         return output[:-1]
 
     def is_meta_data_encrypted(self, encryption_dictionary):
-        mr = re.compile(r'\/EncryptMetadata\s\w+')
+        mr = re.compile(b'\/EncryptMetadata\s\w+')
         if(len(mr.findall(encryption_dictionary)) > 0):
-            wr = re.compile(r'\w+')
+            wr = re.compile(b'\w+')
             is_encrypted = wr.findall(mr.findall(encryption_dictionary)[0])[-1]
             if(is_encrypted == "false"):
                 return "0"
@@ -129,33 +132,34 @@ class PdfParser:
 
     def get_encryption_dictionary(self, object_id):
         encryption_dictionary = \
-                self.get_data_between(object_id+" obj", "endobj")
-        for o in encryption_dictionary.split("endobj"):
-            if(object_id+" obj" in o):
+                self.get_data_between(object_id+b" obj", b"endobj")
+        for o in encryption_dictionary.split(b"endobj"):
+            if(object_id+b" obj" in o):
                 encryption_dictionary = o
         return encryption_dictionary
 
     def get_encrypted_object_id(self, trailer):
-        oir = re.compile(r'\/Encrypt\s\d+\s\d\sR')
+        oir = re.compile(b'\/Encrypt\s\d+\s\d\sR')
         object_id = oir.findall(trailer)[0]
-        oir = re.compile(r'\d+ \d')
+        oir = re.compile(b'\d+ \d')
         object_id = oir.findall(object_id)[0]
         return object_id
 
     def get_trailer(self):
-        trailer = self.get_data_between("trailer", ">>")
+        trailer = self.get_data_between(b"trailer", b">>")
         if(trailer == ""):
-            trailer = self.get_data_between("DecodeParms", "stream")
+            trailer = self.get_data_between(b"DecodeParms", b"stream")
             if(trailer == ""):
                 raise RuntimeError("Can't find trailer")
-        if(trailer != "" and trailer.find("Encrypt") == -1):
+        if(trailer != "" and trailer.find(b"Encrypt") == -1):
+            #TODO: Fix in Python 3
             raise RuntimeError("File not encrypted")
         return trailer
 
     def get_data_between(self, s1, s2):
-        output = ""
+        output = b""
         inside_first = False
-        lines = self.encrypted.split('\n')
+        lines = self.encrypted.split(b'\n')
         for line in lines:
             inside_first = inside_first or line.find(s1) != -1
             if(inside_first):
