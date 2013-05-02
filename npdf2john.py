@@ -182,7 +182,7 @@ class PdfParser:
         escapes = 0
         excluded_indexes = [0, 1, 2]
         #For UE & OE in 1.7 spec
-        if PY3:
+        if not PY3:
             if(o_or_u[2] != '('):
                 excluded_indexes.append(3)
         else:
@@ -197,9 +197,9 @@ class PdfParser:
                     if(escape_seq):
                         esc = "\\"+o_or_u[i]
                         esc = self.unescape(esc)
-                        if(len(self.get_hex_byte(o_or_u, i)) == 1):
+                        if(len(self.get_hex_byte(esc, 0)) == 1):
                             pas += "0"
-                        pas += self.get_hex_byte(o_or_u, i)
+                        pas += self.get_hex_byte(esc, 0)
                         escape_seq = False
                     else:
                         pas += self.get_hex_byte(o_or_u, i)
