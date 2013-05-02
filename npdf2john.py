@@ -200,7 +200,6 @@ class PdfParser:
                     is_back_slash = o_or_u[i] != 92
                 if(is_back_slash or escape_seq):
                     if(escape_seq):
-                        #TODO: Reckong this is messed up in PY3
                         if not PY3:
                             esc = "\\"+o_or_u[i]
                         else:
