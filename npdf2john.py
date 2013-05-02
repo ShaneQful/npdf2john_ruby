@@ -86,12 +86,13 @@ class PdfParser:
         i_d = i_d.lower()
         passwords = self.get_passwords_for_JtR(encryption_dictionary)
         #TODO: Fix in Python3
-        output = self.file_name+b':$pdf$'+v+b'*'+r+b'*'+length+b'*'+p+b'*'+meta+b'*'
-        output += str(len(i_d)/2)+b'*'+i_d+b'*'+passwords
+        output = self.file_name+':$pdf$'+v.decode('ascii')+'*'+r.decode('ascii')+'*'+length.decode('ascii')+'*'
+        output += p.decode('ascii')+'*'+meta+'*'
+        output += str(len(i_d)/2)+'*'+i_d.decode('ascii')+'*'+passwords
         sys.stdout.write("%s\n" % output)
 
     def get_passwords_for_JtR(self, encryption_dictionary):
-        output = b""
+        output = ""
         letters = [b"U", b"O"]
         if(b"1.7" in self.pdf_spec):
             letters = [b"U", b"O", b"UE", b"OE"]
@@ -115,7 +116,10 @@ class PdfParser:
                 pas = pas.replace(b"<",b"")
                 pas = pas.replace(b">",b"")
                 #TODO: Fix for python 3
-                output += str(len(pas)/2)+'*'+pas.lower()+'*'
+                if PY3:
+                    output += str(int(len(pas)/2))+'*'+str(pas.lower(),'ascii')+'*'
+                else:
+                    output += str(int(len(pas)/2))+'*'+pas.lower()+'*'
         return output[:-1]
 
     def is_meta_data_encrypted(self, encryption_dictionary):
