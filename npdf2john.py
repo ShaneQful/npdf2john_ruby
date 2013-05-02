@@ -102,7 +102,7 @@ class PdfParser:
             if(len(pas) > 0):
                 pas = pr.findall(encryption_dictionary)[0]
                 #Because regexs in python suck
-                while(pas[-2] == '\\'):
+                while(pas[-2] == b'\\'):
                     pr_str += b'[^)]+\)'
                     pr = re.compile(pr_str)
                     pas = pr.findall(encryption_dictionary)[0]
@@ -182,8 +182,12 @@ class PdfParser:
         escapes = 0
         excluded_indexes = [0, 1, 2]
         #For UE & OE in 1.7 spec
-        if(o_or_u[2] != '('):
-            excluded_indexes.append(3)
+        if PY3:
+            if(o_or_u[2] != '('):
+                excluded_indexes.append(3)
+        else:
+            if(o_or_u[2] != 40):
+                excluded_indexes.append(3)
         for i in range(len(o_or_u)):
             if(i not in excluded_indexes):
                 if(len(self.get_hex_byte(o_or_u, i)) == 1 \
